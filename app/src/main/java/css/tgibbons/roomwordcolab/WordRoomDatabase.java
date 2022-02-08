@@ -1,7 +1,11 @@
 package css.tgibbons.roomwordcolab;
 
 import android.content.Context;
+
+import androidx.annotation.NonNull;
 import androidx.room.*;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -21,10 +25,33 @@ public abstract class WordRoomDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                             WordRoomDatabase.class, "word_database")
+                            // Add this to execute the callback below to initialize the database
+                            .addCallback(sRoomDatabaseCallback)
                             .build();
                 }
             }
         }
         return INSTANCE;
     }
+
+    private static RoomDatabase.Callback sRoomDatabaseCallback = new RoomDatabase.Callback() {
+        @Override
+        public void onCreate(@NonNull SupportSQLiteDatabase db) {
+            super.onCreate(db);
+
+            // If you want to keep data through app restarts,
+            // comment out the following block
+            databaseWriteExecutor.execute(() -> {
+                // Populate the database in the background.
+                // If you want to start with more words, just add them.
+                WordDao dao = INSTANCE.wordDao();
+                dao.deleteAll();
+
+                Word word = new Word("Scholastica");
+                dao.insert(word);
+                word = new Word("CIS 3334");
+                dao.insert(word);
+            });
+        }
+    };
 }
